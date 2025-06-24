@@ -1,27 +1,34 @@
+// C++ Standard Template Library (STL)
 #include <iostream>
 #include <vector>
 
-/// third Party libraries
+/* Compilation on Linux
+* g++ -std=c++17 ./src/*.cpp -o prog -I ./include/ -lSDL2 -ldl
+*/
+
+/// Third Party Libraries
 #include <SDL.h>
 #include <glad/glad.h>
 
 
-/// Global Variables
-constexpr auto SCREEN_WIDTH = 640;
+/* ********** Global Variables ******* */
+
+// Screen Dimensions
+constexpr auto SCREEN_WIDTH  = 640;
 constexpr auto SCREEN_HEIGHT = 480;
 
-SDL_Window* window = nullptr;
-SDL_GLContext glcontext = nullptr;
+SDL_Window* window           = nullptr;
+SDL_GLContext glcontext      = nullptr;
 
-bool gQuit = false; // if true, we quit
+// Main Loop Flag
+bool gQuit  = false; // if true, we quit
 
-// Vertex Array Object
-GLuint VAO = 0;
-// Bertex Buffer Object
-GLuint VBO = 0;
+/* ** SHADER **** The following store the unique id for the graphics pipeline*******   */
+GLuint VAO                            = 0;  // Vertex Array Object (VAO) encapsulates all items needed to render an object.
+GLuint VBO                            = 0;  // Vertex Buffer Object (VBO) stores information relating to vertices (e.g. positions, normals, textures). VBOs are a mechanism for arranging geometry on the GPU.
+GLuint GraphicsPipelineShaderProgram  = 0;  // Program Object (for our shaders) that will be used for our OpenGL draw calls.
 
-// Program Object (for our shaders)
-GLuint GraphicsPipelineShaderProgram = 0;
+
 
 // Vertex Shader
 // Vertex Shader executes once per vertex, and will be in charge of
@@ -57,37 +64,43 @@ void GetOpenGLVersionInfo()
 
 void InitializeProgram()
 {
+	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
 		std::cout << "SDL2 coud not initialize video subsystem" << std::endl;
 		exit(1);
 	}
 
+	// Setup OpenGL Context
+	// Use OpenGL 4.1 core or greater
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+	// Request a double buffer for smooth updating.
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-	window = SDL_CreateWindow("OPENGL Window", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
-	if (window == nullptr)
+	// Create an application window using OpenGL that supports SDL
+	window = SDL_CreateWindow("OpenGL Program Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+	if (window == nullptr) // check if window was created
 	{
-		std::cout << "SDL Window could not be created" << std::endl;
+		std::cout << "SDL Window could not be created! SDL Error: " << SDL_GetError() << std::endl;
 		exit(1);
 	}
 
+	// Create OpenGL Craphics Context
 	glcontext = SDL_GL_CreateContext(window);
 	if (glcontext == nullptr)
 	{
-		std::cout << "OpenGL Context not available" << std::endl;
+		std::cout << "OpenGL Context could not be created! SDL Error : " << SDL_GetError() << std::endl;
 		exit(1);
 	}
 
-	// initialize the Glad Library
+	// Initialize the GLAD Library
 	if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
 	{
-		std::cout << "Glad was not initialized" << std::endl;
+		std::cout << "GLAD did not initialized" << std::endl;
 		exit(1);
 	}
 
@@ -102,17 +115,18 @@ void VertexSpecification()
 	const std::vector<GLfloat> vertexPosition
 	{
 		// x     y     z
-		-0.8f, -0.8f, 0.0f, // vertex 1
-		0.8f, -0.8f, 0.0f,  // vertex 2
-		0.0f, 0.8f, 0.0f    // vertex 3
+		-0.8f, -0.8f, 0.0f, // Left vertex position
+		0.8f, -0.8f, 0.0f,  // Right vertex position
+		0.0f, 0.8f, 0.0f    // Top vertex position
 	};
 
-	// We start setting things up
-	// on the GPU
+	// We start setting things up on the GPU
+	// 
+	// Vertex Arrays Object (VAO) Setup
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
-	// Start generating our Vertex Buffer Object
+	// Vertex Buffer Object (VBO) creation
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, vertexPosition.size() * sizeof(GLfloat), vertexPosition.data(), GL_STATIC_DRAW);
@@ -228,21 +242,31 @@ void CleanUp()
 {
 	SDL_DestroyWindow(window);
 
+	// Quit SDL subsystems
 	SDL_Quit();
 }
 
-
-
+/**
+* The main entry point into our C++ programs.
+* 
+* @return program status
+*/
 int main(int argc, char* argv[])
 {
+	// 1. Setup the graphics program
 	InitializeProgram();
 
+	// 2. Setup our geometry
 	VertexSpecification();
 
+	// 3. Create our graphics pipeline
+	// - At a minimum, this means the vertexand fragment shader
 	CreateGraphicPipeline();
 
+	// 4. Call the main application loop
 	MainLoop();
 
+	// 5. Call the Cleanup function when our program terminates
 	CleanUp();
 
 	return 0;
